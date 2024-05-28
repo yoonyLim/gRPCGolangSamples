@@ -13,6 +13,23 @@ func makeMessage(message string) clientstreaming.Message {
 	return clientstreaming.Message{Message: message}
 }
 
+func sendMessages(stream clientstreaming.ClientStreaming_GetServerResponseClient) {
+	messages := [5]clientstreaming.Message{
+		makeMessage("message #1"),
+		makeMessage("message #2"),
+		makeMessage("message #3"),
+		makeMessage("message #4"),
+		makeMessage("message #5"),
+	}
+
+	for i := 0; i < len(messages); i++ {
+		log.Printf("[client to server] %s", messages[i].Message)
+		if err := stream.Send(&messages[i]); err != nil {
+			log.Fatalf("Failed to send a message to the server: %v", err)
+		}
+	}
+}
+
 func main() {
 	var conn *grpc.ClientConn
 	conn, err := grpc.NewClient(":50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -30,20 +47,7 @@ func main() {
 		log.Fatalf("Error with GetServerResponses: %s", err)
 	}
 
-	messages := [5]clientstreaming.Message{
-		makeMessage("message #1"),
-		makeMessage("message #2"),
-		makeMessage("message #3"),
-		makeMessage("message #4"),
-		makeMessage("message #5"),
-	}
-
-	for i := 0; i < len(messages); i++ {
-		log.Printf("[client to server] %s", messages[i].Message)
-		if err := stream.Send(&messages[i]); err != nil {
-			log.Fatalf("Failed to send a message to the server: %v", err)
-		}
-	}
+	sendMessages(stream)
 
 	response, err := stream.CloseAndRecv()
 	if err != nil {
